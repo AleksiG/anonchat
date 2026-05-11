@@ -1,0 +1,474 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Anon Chatroom</title>
+
+    <style>
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            background: #0f0f0f;
+            color: white;
+            font-family: Arial, sans-serif;
+
+            display: flex;
+            flex-direction: column;
+
+            height: 100vh;
+        }
+
+        header {
+            background: #181818;
+
+            padding: 14px 16px;
+
+            border-bottom: 1px solid #2d2d2d;
+
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .title {
+            font-size: 20px;
+            font-weight: bold;
+        }
+
+        #changeNameBtn {
+            background: #333;
+            color: white;
+
+            border: none;
+            border-radius: 10px;
+
+            padding: 10px 14px;
+
+            cursor: pointer;
+
+            font-size: 14px;
+        }
+
+        #changeNameBtn:hover {
+            opacity: 0.9;
+        }
+
+        #messages {
+            flex: 1;
+
+            overflow-y: auto;
+
+            padding: 15px;
+
+            display: flex;
+            flex-direction: column;
+
+            gap: 10px;
+        }
+
+        .msg {
+            background: #1d1d1d;
+
+            border: 1px solid #2a2a2a;
+
+            padding: 12px;
+
+            border-radius: 14px;
+
+            max-width: 90%;
+
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+        }
+
+        .topline {
+            display: flex;
+            align-items: center;
+
+            gap: 8px;
+
+            margin-bottom: 6px;
+        }
+
+        .username {
+            color: #4ea1ff;
+
+            font-weight: bold;
+
+            font-size: 14px;
+        }
+
+        .time {
+            color: #888;
+
+            font-size: 12px;
+        }
+
+        .text {
+            font-size: 15px;
+            line-height: 1.4;
+        }
+
+        #bottom {
+            display: flex;
+
+            gap: 10px;
+
+            padding: 12px;
+
+            background: #181818;
+
+            border-top: 1px solid #2d2d2d;
+        }
+
+        #message {
+            flex: 1;
+
+            padding: 14px;
+
+            border-radius: 12px;
+
+            border: 1px solid #333;
+
+            background: #222;
+            color: white;
+
+            font-size: 16px;
+
+            outline: none;
+        }
+
+        #sendBtn {
+            background: #4ea1ff;
+            color: white;
+
+            border: none;
+
+            border-radius: 12px;
+
+            padding: 0 18px;
+
+            font-size: 15px;
+            font-weight: bold;
+
+            cursor: pointer;
+        }
+
+        #sendBtn:hover {
+            opacity: 0.9;
+        }
+
+        /* NAME MODAL */
+
+        #nameModal {
+            position: fixed;
+
+            top: 0;
+            left: 0;
+
+            width: 100%;
+            height: 100%;
+
+            background: rgba(0,0,0,0.7);
+
+            display: none;
+
+            justify-content: center;
+            align-items: center;
+
+            z-index: 999;
+        }
+
+        #nameBox {
+            background: #1b1b1b;
+
+            width: 90%;
+            max-width: 350px;
+
+            padding: 20px;
+
+            border-radius: 16px;
+
+            border: 1px solid #333;
+        }
+
+        #nameBox h2 {
+            margin-top: 0;
+
+            margin-bottom: 15px;
+
+            font-size: 20px;
+        }
+
+        #nameInput {
+            width: 100%;
+
+            padding: 12px;
+
+            border-radius: 10px;
+
+            border: 1px solid #444;
+
+            background: #222;
+            color: white;
+
+            font-size: 16px;
+
+            margin-bottom: 15px;
+        }
+
+        #saveNameBtn {
+            width: 100%;
+
+            padding: 12px;
+
+            border: none;
+
+            border-radius: 10px;
+
+            background: #4ea1ff;
+            color: white;
+
+            font-size: 16px;
+            font-weight: bold;
+
+            cursor: pointer;
+        }
+
+        @media (max-width: 600px) {
+
+            .title {
+                font-size: 18px;
+            }
+
+            #changeNameBtn {
+                padding: 8px 10px;
+                font-size: 13px;
+            }
+
+            .msg {
+                max-width: 100%;
+            }
+
+            #message {
+                font-size: 16px;
+            }
+        }
+
+    </style>
+
+</head>
+
+<body>
+
+<header>
+
+    <div class="title">
+        Anon Chatroom
+    </div>
+
+    <button id="changeNameBtn" onclick="changeName()">
+        Change Name
+    </button>
+
+</header>
+
+<div id="messages"></div>
+
+<div id="bottom">
+
+    <input
+        id="message"
+        placeholder="Type message..."
+        maxlength="300"
+    >
+
+    <button id="sendBtn" onclick="sendMessage()">
+        Send
+    </button>
+
+</div>
+
+<!-- NAME POPUP -->
+
+<div id="nameModal">
+
+    <div id="nameBox">
+
+        <h2>Change Username</h2>
+
+        <input
+            id="nameInput"
+            maxlength="20"
+            placeholder="Enter username..."
+        >
+
+        <button id="saveNameBtn" onclick="saveName()">
+            Save
+        </button>
+
+    </div>
+
+</div>
+
+<script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+
+<script>
+
+const socket = io();
+
+let username =
+    localStorage.getItem("chat_username")
+    || "Anonwriter";
+
+
+function changeName() {
+
+    document.getElementById("nameModal")
+    .style.display = "flex";
+
+    document.getElementById("nameInput")
+    .value = username;
+
+    document.getElementById("nameInput")
+    .focus();
+}
+
+
+function saveName() {
+
+    const input =
+        document.getElementById("nameInput");
+
+    let newName =
+        input.value.trim();
+
+    if (newName.length < 1) {
+        return;
+    }
+
+    if (newName.length > 20) {
+        newName = newName.substring(0, 20);
+    }
+
+    username = newName;
+
+    localStorage.setItem(
+        "chat_username",
+        username
+    );
+
+    document.getElementById("nameModal")
+    .style.display = "none";
+}
+
+
+function sendMessage() {
+
+    const input =
+        document.getElementById("message");
+
+    const text =
+        input.value.trim();
+
+    if (text === "") return;
+
+    socket.send({
+        username: username,
+        text: text
+    });
+
+    input.value = "";
+}
+
+
+socket.on("message", function(msg) {
+
+    const messages =
+        document.getElementById("messages");
+
+    const div =
+        document.createElement("div");
+
+    div.className = "msg";
+
+    div.innerHTML = `
+        <div class="topline">
+
+            <div class="username">
+                ${escapeHtml(msg.username)}
+            </div>
+
+            <div class="time">
+                [${msg.time}]
+            </div>
+
+        </div>
+
+        <div class="text">
+            ${escapeHtml(msg.text)}
+        </div>
+    `;
+
+    messages.appendChild(div);
+
+    messages.scrollTop =
+        messages.scrollHeight;
+});
+
+
+document.getElementById("message")
+.addEventListener("keypress", function(e) {
+
+    if (e.key === "Enter") {
+        sendMessage();
+    }
+
+});
+
+
+document.getElementById("nameInput")
+.addEventListener("keypress", function(e) {
+
+    if (e.key === "Enter") {
+        saveName();
+    }
+
+});
+
+
+window.onclick = function(event) {
+
+    const modal =
+        document.getElementById("nameModal");
+
+    if (event.target == modal) {
+
+        modal.style.display = "none";
+    }
+}
+
+
+function escapeHtml(text) {
+
+    const div =
+        document.createElement("div");
+
+    div.innerText = text;
+
+    return div.innerHTML;
+}
+
+</script>
+
+</body>
+</html>
+
