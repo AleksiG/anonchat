@@ -7,7 +7,7 @@ from eventlet.green.threading import Event
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'secret'
 
-socketio = SocketIO(app)
+socketio = SocketIO(app, async_mode="threading")
 
 # stores chat messages in memory
 chat_history = []
