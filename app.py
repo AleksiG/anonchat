@@ -2,7 +2,6 @@
 from flask import Flask, render_template
 from flask_socketio import SocketIO, send
 from datetime import datetime
-from eventlet.green.threading import Event
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'secret'
